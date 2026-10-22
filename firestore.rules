@@ -16,9 +16,8 @@ service cloud.firestore {
         && request.resource.data.longitude >= -180.0 && request.resource.data.longitude <= 180.0
         && request.resource.data.photoUrl is string;
         
-      // Allow upvoting/confirming by community members
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'confirmations', 'status'])
-        && request.resource.data.upvotes is number;
+      // Allow upvoting/confirming by community members and marking repairs
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasAny(['upvotes', 'confirmations', 'status', 'fixedPhotoUrl', 'fixedAt', 'fixedBy', 'description']);
         
       // Disallow client deletions (admin only)
       allow delete: if false;
