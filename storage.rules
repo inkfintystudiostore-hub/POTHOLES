@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /potholes/{imageId} {
+      // Allow public read for map pins and inspection cards
+      allow read: if true;
+      
+      // Allow upload only if it's a valid image under 5MB
+      allow write: if request.resource.size < 5 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+  }
+}

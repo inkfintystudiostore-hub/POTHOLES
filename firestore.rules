@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Pothole reports collection
+    match /potholes/{potholeId} {
+      // Anyone can read road hazards to stay safe on the road
+      allow read: if true;
+      
+      // Allow creation with strict validation
+      allow create: if request.resource.data.keys().hasAll(['latitude', 'longitude', 'severity', 'photoUrl', 'reportedAt'])
+        && request.resource.data.severity in ['low', 'medium', 'high']
+        && request.resource.data.latitude is number
+        && request.resource.data.latitude >= -90.0 && request.resource.data.latitude <= 90.0
+        && request.resource.data.longitude is number
+        && request.resource.data.longitude >= -180.0 && request.resource.data.longitude <= 180.0
+        && request.resource.data.photoUrl is string;
+        
+      // Allow upvoting/confirming by community members
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['upvotes', 'confirmations', 'status'])
+        && request.resource.data.upvotes is number;
+        
+      // Disallow client deletions (admin only)
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,338 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: #090D16;
+  color: #F8FAFC;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* User Location Glowing Blue Pin */
+.user-location-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-location-marker .user-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2563EB;
+  border: 3px solid #FFF;
+  box-shadow: 0 0 14px rgba(37, 99, 235, 0.9);
+  z-index: 10;
+}
+
+.user-location-marker .user-pulse-ring {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.3);
+  border: 1.5px solid #3B82F6;
+  animation: user-ping 2s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+
+@keyframes user-ping {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(3.5);
+    opacity: 0;
+  }
+}
+
+/* Vehicle Drive Simulator Marker */
+.vehicle-marker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vehicle-core {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #0F172A;
+  border: 2.5px solid #3B82F6;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  z-index: 20;
+  transition: transform 0.2s ease;
+}
+
+.vehicle-radar-zone {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 1.5px dashed rgba(59, 130, 246, 0.6);
+  background: rgba(59, 130, 246, 0.12);
+  animation: radar-sweep 2.5s infinite linear;
+}
+
+@keyframes radar-sweep {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* AI Scanning Laser Line */
+@keyframes ai-scanline {
+  0% {
+    top: 6%;
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.45;
+  }
+  100% {
+    top: 90%;
+    opacity: 0.95;
+  }
+}
+
+.ai-scan-laser {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  height: 2.5px;
+  background: linear-gradient(90deg, transparent, #38BDF8, #10B981, #38BDF8, transparent);
+  box-shadow: 0 0 12px #38BDF8, 0 0 24px #10B981;
+  animation: ai-scanline 2s infinite ease-in-out alternate;
+  pointer-events: none;
+}
+
+code, .mono {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Leaflet Container Reset */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #0B1120 !important;
+  font-family: inherit;
+}
+
+/* Custom dark tile filter */
+.dark-tiles .leaflet-tile {
+  filter: brightness(0.7) invert(1) contrast(3) hue-rotate(200deg) saturate(0.35) brightness(0.7);
+}
+
+/* Radar Ring Animations */
+
+/* 1. SEVERE CRATER (Intense Red Shockwave - 1.2s frequency) */
+@keyframes pulse-severe-ring1 {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(3.2);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse-severe-ring2 {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.9;
+  }
+  60% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(4.8);
+    opacity: 0;
+  }
+}
+
+/* 2. MODERATE DIP (Amber Ripple - 2.2s frequency) */
+@keyframes pulse-moderate-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* 3. MINOR WEAR (Subtle Yellow Ping - 3.5s frequency) */
+@keyframes pulse-minor-ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2.0);
+    opacity: 0;
+  }
+}
+
+/* 4. SUPER SONAR EXPLOSION (Triggered immediately when new photo uploaded) */
+@keyframes new-arrival-sonar {
+  0% {
+    transform: scale(0.4);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.9);
+  }
+  70% {
+    transform: scale(2.5);
+    box-shadow: 0 0 0 40px rgba(239, 68, 68, 0);
+  }
+  100% {
+    transform: scale(1.0);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* Radar Marker Styles */
+.radar-marker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.radar-core {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  box-shadow: 0 0 16px rgba(0, 0, 0, 0.8);
+  border: 2.5px solid #FFF;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.radar-core:hover {
+  transform: scale(1.35);
+}
+
+/* Severity Colors & Rings */
+.severity-high .radar-core {
+  background: #EF4444;
+  box-shadow: 0 0 20px #EF4444;
+}
+
+.severity-high .radar-ring-1 {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #EF4444;
+  background: rgba(239, 68, 68, 0.25);
+  animation: pulse-severe-ring1 1.4s infinite cubic-bezier(0.215, 0.61, 0.355, 1);
+  pointer-events: none;
+}
+
+.severity-high .radar-ring-2 {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid #DC2626;
+  background: rgba(220, 38, 38, 0.15);
+  animation: pulse-severe-ring2 1.4s infinite 0.4s cubic-bezier(0.215, 0.61, 0.355, 1);
+  pointer-events: none;
+}
+
+.severity-medium .radar-core {
+  background: #F59E0B;
+  box-shadow: 0 0 16px #F59E0B;
+}
+
+.severity-medium .radar-ring-1 {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid #F59E0B;
+  background: rgba(245, 158, 11, 0.2);
+  animation: pulse-moderate-ring 2.2s infinite ease-out;
+  pointer-events: none;
+}
+
+.severity-low .radar-core {
+  background: #EAB308;
+  box-shadow: 0 0 12px #EAB308;
+}
+
+.severity-low .radar-ring-1 {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #EAB308;
+  background: rgba(234, 179, 8, 0.15);
+  animation: pulse-minor-ring 3.5s infinite ease-out;
+  pointer-events: none;
+}
+
+/* 4. FIXED ROAD PATCH (Glowing Emerald Checkmark) */
+.severity-fixed .radar-core {
+  background: #10B981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.9);
+  border: 2px solid #FFF;
+}
+
+.severity-fixed .radar-ring-1 {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid #10B981;
+  background: rgba(16, 185, 129, 0.15);
+  pointer-events: none;
+}
+
+.new-arrival-pulse {
+  animation: new-arrival-sonar 1.2s ease-out 3;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.glass-pill {
+  background: rgba(30, 41, 59, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}

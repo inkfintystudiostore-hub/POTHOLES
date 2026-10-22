@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "RoadWatch - Pothole Patrol",
+    "slug": "roadwatch-potholes",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0F172A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.roadwatch.potholeapp",
+      "infoPlist": {
+        "NSCameraUsageDescription": "RoadWatch requires camera access to photograph road hazards and potholes.",
+        "NSLocationWhenInUseUsageDescription": "RoadWatch requires your GPS location to pinpoint and geotag potholes on the city map."
+      }
+    },
+    "android": {
+      "package": "com.roadwatch.potholeapp",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#0F172A",
+        "foregroundImage": "./assets/icon.png"
+      }
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow RoadWatch to access your camera to capture pothole photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow RoadWatch to use your GPS location to geotag reported potholes."
+        }
+      ]
+    ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
