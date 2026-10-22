@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, Layers, Smartphone, PlusCircle, LocateFixed, Car, Volume2, VolumeX, Route } from 'lucide-react';
+import { Radio, Layers, Smartphone, PlusCircle, LocateFixed, Car, Volume2, VolumeX, Route, Flame } from 'lucide-react';
 import LocationSearch from './LocationSearch';
 
 export default function HeaderNav({
@@ -20,6 +20,8 @@ export default function HeaderNav({
   onToggleMute,
   onOpenRouteScanner,
   hasActiveRoutes,
+  isLiveConnected,
+  onOpenFirebaseSync,
 }) {
   return (
     <header className="absolute top-4 left-4 right-4 z-[1000] flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3 pointer-events-none">
@@ -60,6 +62,20 @@ export default function HeaderNav({
 
       {/* Action Controls & Severity Filters */}
       <div className="glass-panel rounded-2xl px-3 py-1.5 pointer-events-auto flex items-center justify-between xl:justify-end gap-2 overflow-x-auto shadow-xl">
+        {/* Cloud Sync Button */}
+        <button
+          onClick={onOpenFirebaseSync}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-black transition-all shadow-md whitespace-nowrap ${
+            isLiveConnected
+              ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-300 border border-amber-500/40 shadow-amber-500/10'
+              : 'bg-slate-800 text-amber-400 hover:bg-slate-700 border border-amber-500/30'
+          }`}
+          title="Connect Firebase for Live Multi-Device Sync"
+        >
+          <Flame className={`w-3.5 h-3.5 ${isLiveConnected ? 'text-amber-400 fill-amber-400 animate-pulse' : 'text-amber-400'}`} />
+          <span>{isLiveConnected ? 'Cloud Live' : 'Cloud Sync'}</span>
+        </button>
+
         {/* Safe Route Scanner Button */}
         <button
           onClick={onOpenRouteScanner}

@@ -8,9 +8,16 @@ import LocationPermissionModal from './components/LocationPermissionModal';
 import ProximityAlertHUD from './components/ProximityAlertHUD';
 import SafeRouteModal from './components/SafeRouteModal';
 import CivicGrievanceModal from './components/CivicGrievanceModal';
+import FirebaseSyncModal from './components/FirebaseSyncModal';
 import { INITIAL_POTHOLES } from './data/mockPotholes';
 import { audioRadar, getDistanceInMeters } from './utils/audioRadar';
 import { calculateRouteAlternatives } from './utils/routeService';
+import {
+  subscribeToLivePotholes,
+  publishPotholeToCloud,
+  updatePotholeInCloud,
+} from './services/firebaseSync';
+import { isFirebaseConfigured } from './services/firebaseConfig';
 import { Bell, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
@@ -39,6 +46,11 @@ export default function App() {
 
   // Civic Grievance Modal State
   const [grievancePothole, setGrievancePothole] = useState(null);
+
+  // Firebase Real-time Cloud Sync State
+  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
+  const [isLiveConnected, setIsLiveConnected] = useState(isFirebaseConfigured());
+  const initialLoadRef = useRef(true);
 
   // Statistics
   const stats = {
@@ -76,6 +88,15 @@ export default function App() {
         return item;
       })
     );
+
+    // Sync to Cloud Firestore in real-time
+    updatePotholeInCloud(potholeId, {
+      status: 'fixed',
+      fixedPhotoUrl: fixedData.fixedPhotoUrl,
+      fixedAt: fixedData.fixedAt,
+      fixedBy: fixedData.fixedBy,
+      description: fixedData.fixedNote,
+    }).catch((err) => console.warn('Cloud update fallback:', err));
 
     setNotification({
       title: '🎉 Road Repair Verified!',
@@ -116,6 +137,14 @@ export default function App() {
           if (selectedPothole && selectedPothole.id === id) {
             setSelectedPothole(updated);
           }
+
+          // Sync to Cloud Firestore in real-time
+          updatePotholeInCloud(id, {
+            upvotes: newUpvotes,
+            confirmations: newConfirmations,
+            status: newStatus,
+          }).catch((err) => console.warn('Cloud upvote fallback:', err));
+
           return updated;
         }
         return item;
@@ -295,8 +324,42 @@ export default function App() {
     }, 200);
   };
 
+  // Subscribe to Live Real-Time Firestore Sync
   useEffect(() => {
+    const unsubscribe = subscribeToLivePotholes(
+      (data, isCloud) => {
+        setIsLiveConnected(isCloud);
+        if (data && data.length > 0) {
+          setPotholes((prev) => {
+            // Check if there is a new hazard that arrived live over cloud
+            if (!initialLoadRef.current && isCloud) {
+              const prevIds = new Set(prev.map((p) => p.id));
+              const newlyAdded = data.find((p) => !prevIds.has(p.id));
+              if (newlyAdded) {
+                setLatestReportId(newlyAdded.id);
+                setFlyToTarget({ lat: newlyAdded.latitude, lng: newlyAdded.longitude, zoom: 15 });
+                audioRadar.playModerateChime();
+                setNotification({
+                  title: '📡 Live Cloud Radar: New Hazard Reported!',
+                  message: `${newlyAdded.severity.toUpperCase()} hazard synced live from commuter device at ${newlyAdded.address || 'Roadway'}.`,
+                  severity: newlyAdded.severity,
+                });
+                setTimeout(() => setNotification(null), 6000);
+              }
+            }
+            initialLoadRef.current = false;
+            return data;
+          });
+        }
+      },
+      (err) => {
+        console.warn('Real-time sync notice:', err);
+        setIsLiveConnected(false);
+      }
+    );
+
     return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
       if (driveIntervalRef.current) {
         clearInterval(driveIntervalRef.current);
       }
@@ -307,6 +370,11 @@ export default function App() {
     setPotholes((prev) => [newPothole, ...prev]);
     setLatestReportId(newPothole.id);
     setSelectedPothole(newPothole);
+
+    // Sync to Cloud Firestore in real-time
+    publishPotholeToCloud(newPothole).catch((err) =>
+      console.warn('Could not sync new report to Firestore:', err)
+    );
 
     setNotification({
       title: '🚨 Pothole Upload Received!',
@@ -347,6 +415,8 @@ export default function App() {
         onToggleMute={handleToggleMute}
         onOpenRouteScanner={() => setIsRouteModalOpen(true)}
         hasActiveRoutes={routes.length > 0}
+        isLiveConnected={isLiveConnected}
+        onOpenFirebaseSync={() => setIsFirebaseModalOpen(true)}
       />
 
       {/* Full-Screen City Road Map */}
@@ -428,6 +498,16 @@ export default function App() {
         isOpen={isSimulateOpen}
         onClose={() => setIsSimulateOpen(false)}
         onSimulate={handleNewReport}
+      />
+
+      {/* Firebase Cloud Sync Modal */}
+      <FirebaseSyncModal
+        isOpen={isFirebaseModalOpen}
+        onClose={() => setIsFirebaseModalOpen(false)}
+        isLiveConnected={isLiveConnected}
+        onConfigUpdated={(cfg) => {
+          setIsLiveConnected(isFirebaseConfigured(cfg));
+        }}
       />
 
       {/* Bottom Floating Legend */}

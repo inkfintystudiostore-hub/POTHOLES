@@ -1,4 +1,5 @@
-import { isFirebaseConfigured } from './firebaseConfig';
+import { isFirebaseConfigured, db } from './firebaseConfig';
+import { collection, doc, setDoc, updateDoc, getDocs, onSnapshot, query, orderBy } from 'firebase/firestore';
 import * as ImageManipulator from 'expo-image-manipulator';
 
 // Realistic sample potholes so the map is never empty for store reviewers and first-time users
@@ -68,12 +69,56 @@ export async function optimizePotholePhoto(uri) {
 }
 
 /**
+ * Subscribe to live pothole updates via Firestore onSnapshot
+ */
+export function subscribeToPotholes(callback) {
+  if (isFirebaseConfigured() && db) {
+    try {
+      const q = query(collection(db, 'potholes'));
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          const remoteList = [];
+          snapshot.forEach((docSnap) => {
+            remoteList.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          if (remoteList.length > 0) {
+            localPotholes = remoteList;
+            callback(remoteList);
+          } else {
+            callback(localPotholes);
+          }
+        },
+        (error) => {
+          console.warn('[Mobile] Firestore subscription error, using local:', error);
+          callback(localPotholes);
+        }
+      );
+    } catch (err) {
+      console.warn('[Mobile] Real-time subscription error:', err);
+    }
+  }
+
+  callback(localPotholes);
+  return () => {};
+}
+
+/**
  * Fetch all pothole reports
  */
 export async function fetchPotholes() {
-  if (isFirebaseConfigured()) {
-    // In production mode with live Firebase:
-    // Firestore query will run here
+  if (isFirebaseConfigured() && db) {
+    try {
+      const snap = await getDocs(collection(db, 'potholes'));
+      const remote = [];
+      snap.forEach(d => remote.push({ id: d.id, ...d.data() }));
+      if (remote.length > 0) {
+        localPotholes = remote;
+        return remote;
+      }
+    } catch (err) {
+      console.warn('[Mobile] Error fetching from Firestore:', err);
+    }
   }
   return [...localPotholes];
 }
@@ -99,12 +144,17 @@ export async function submitPotholeReport({ photoUri, latitude, longitude, sever
     address: `GPS: ${Number(latitude).toFixed(4)}, ${Number(longitude).toFixed(4)}`,
   };
 
-  // Prepend to top of list
+  // Prepend to top of local cache
   localPotholes = [newReport, ...localPotholes];
 
-  if (isFirebaseConfigured()) {
-    // Upload image to Firebase Storage and document to Firestore
-    console.log('Firebase active: submitting to Firestore...');
+  // If live Firebase is configured, sync to Firestore
+  if (isFirebaseConfigured() && db) {
+    try {
+      await setDoc(doc(db, 'potholes', newReport.id), newReport);
+      console.log('[Mobile] Synced new pothole report to Firestore successfully:', newReport.id);
+    } catch (err) {
+      console.error('[Mobile] Failed to upload report to Firestore:', err);
+    }
   }
 
   return newReport;
@@ -124,5 +174,20 @@ export async function upvotePothole(potholeId) {
     }
     return item;
   });
+
+  if (isFirebaseConfigured() && db) {
+    try {
+      const updated = localPotholes.find(p => p.id === potholeId);
+      if (updated) {
+        await updateDoc(doc(db, 'potholes', potholeId), {
+          upvotes: updated.upvotes,
+          confirmations: updated.confirmations,
+        });
+      }
+    } catch (err) {
+      console.error('[Mobile] Failed to upvote in Firestore:', err);
+    }
+  }
+
   return localPotholes.find(p => p.id === potholeId);
 }
