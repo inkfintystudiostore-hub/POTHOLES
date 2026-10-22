@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import RadarMap from './components/RadarMap';
 import HeaderNav from './components/HeaderNav';
+import FeatureDrawer from './components/FeatureDrawer';
+import CameraReportModal from './components/CameraReportModal';
 import InspectionSidebar from './components/InspectionSidebar';
 import PhoneSimulator from './components/PhoneSimulator';
-import SimulateUploadModal from './components/SimulateUploadModal';
-import LocationPermissionModal from './components/LocationPermissionModal';
 import ProximityAlertHUD from './components/ProximityAlertHUD';
 import SafeRouteModal from './components/SafeRouteModal';
 import CivicGrievanceModal from './components/CivicGrievanceModal';
@@ -18,7 +18,7 @@ import {
   updatePotholeInCloud,
 } from './services/firebaseSync';
 import { isFirebaseConfigured } from './services/firebaseConfig';
-import { Bell, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Camera, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   const [potholes, setPotholes] = useState(INITIAL_POTHOLES);
@@ -27,7 +27,10 @@ export default function App() {
   const [selectedPothole, setSelectedPothole] = useState(null);
   const [latestReportId, setLatestReportId] = useState(null);
   const [notification, setNotification] = useState(null);
-  const [isSimulateOpen, setIsSimulateOpen] = useState(false);
+  
+  // UI & Drawer Modals
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCameraReportOpen, setIsCameraReportOpen] = useState(false);
   const [isPhoneOpen, setIsPhoneOpen] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [flyToTarget, setFlyToTarget] = useState(null);
@@ -51,6 +54,29 @@ export default function App() {
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
   const [isLiveConnected, setIsLiveConnected] = useState(isFirebaseConfigured());
   const initialLoadRef = useRef(true);
+
+  // DIRECT AUTO-GEOLOCATION ON PAGE LOAD
+  // Automatically requests user location and glides map directly to their city/neighborhood
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const loc = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: Math.round(pos.coords.accuracy || 4),
+          };
+          setUserLocation(loc);
+          setFlyToTarget({ lat: loc.lat, lng: loc.lng, zoom: 16 });
+          console.log('[RoadWatch] Centered directly on user location:', loc);
+        },
+        (err) => {
+          console.log('[RoadWatch] Using default regional view:', err.message);
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    }
+  }, []);
 
   // Statistics
   const stats = {
@@ -100,7 +126,7 @@ export default function App() {
 
     setNotification({
       title: '🎉 Road Repair Verified!',
-      message: 'Status upgraded to FIXED. Drag the interactive Before & After slider to view the transformation!',
+      message: 'Status upgraded to FIXED. View the Before & After slider!',
       severity: 'low',
     });
 
@@ -125,6 +151,13 @@ export default function App() {
               severity: 'medium',
             });
             setTimeout(() => setNotification(null), 5000);
+          } else {
+            setNotification({
+              title: '👍 Hazard Confirmed (+1)!',
+              message: `Now confirmed by ${newConfirmations} citizens. Helps avoid duplicate reports.`,
+              severity: 'low',
+            });
+            setTimeout(() => setNotification(null), 4000);
           }
 
           const updated = {
@@ -161,90 +194,44 @@ export default function App() {
 
     setNotification({
       title: '🛣️ Road Quality Scan Completed!',
-      message: `Clean Bypass is ${recommended?.smoothnessScore}% smooth (0 craters). Direct road has 3 severe craters.`,
+      message: `Clean Bypass is ${recommended?.smoothnessScore}% smooth. Direct route has road craters.`,
       severity: 'low',
     });
 
     setTimeout(() => setNotification(null), 6000);
   };
 
-  const handleLocationGranted = (loc) => {
-    setUserLocation(loc);
-    setFlyToTarget({ lat: loc.lat, lng: loc.lng, zoom: 14 });
-
-    const localPothole = {
-      id: `local-user-pot-${Date.now()}`,
-      latitude: +(loc.lat + 0.005).toFixed(5),
-      longitude: +(loc.lng + 0.004).toFixed(5),
-      severity: 'high',
-      title: 'Active Road Crater in Your Neighborhood',
-      description: 'Reported by local driver. Verified high-risk road degradation.',
-      photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=1200&auto=format&fit=crop&q=80',
-      reportedAt: new Date().toISOString(),
-      status: 'reported',
-      upvotes: 1,
-      confirmations: 1,
-      address: 'Near Your Neighborhood Main Road',
-      reportedBy: 'Local Community Watch',
-    };
-
-    setPotholes((prev) => [localPothole, ...prev]);
-
-    setNotification({
-      title: '📍 Local City Map Activated!',
-      message: `Centered on your location (${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}). Hazards near you loaded.`,
-      severity: 'medium',
-    });
-
-    setTimeout(() => setNotification(null), 5000);
-  };
-
   const handleSelectLocation = (place) => {
     const [lat, lng] = place.coordinates;
-    setFlyToTarget({ lat, lng, zoom: 13 });
-
-    const searchPothole = {
-      id: `search-pot-${Date.now()}`,
-      latitude: +(lat + (Math.random() - 0.5) * 0.015).toFixed(5),
-      longitude: +(lng + (Math.random() - 0.5) * 0.015).toFixed(5),
-      severity: 'high',
-      title: `Major Road Crater - ${place.name}`,
-      description: `Discovered in ${place.label}. Severe surface collapse requiring road repair.`,
-      photoUrl: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=1200&auto=format&fit=crop&q=80',
-      reportedAt: new Date().toISOString(),
-      status: 'verified',
-      upvotes: 12,
-      confirmations: 5,
-      address: place.label,
-      reportedBy: 'Regional Patrol',
-    };
-
-    setPotholes((prev) => [searchPothole, ...prev]);
+    setFlyToTarget({ lat, lng, zoom: 15 });
 
     setNotification({
       title: `📍 Navigated to ${place.name}`,
-      message: `Loaded regional road network and hazards for ${place.label}.`,
+      message: `Loaded regional road network for ${place.label}.`,
       severity: 'low',
     });
 
-    setTimeout(() => setNotification(null), 5000);
+    setTimeout(() => setNotification(null), 4000);
   };
 
   const handleLocateMe = () => {
     if (userLocation) {
-      setFlyToTarget({ lat: userLocation.lat, lng: userLocation.lng, zoom: 15 });
+      setFlyToTarget({ lat: userLocation.lat, lng: userLocation.lng, zoom: 16 });
     } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          handleLocationGranted({
+          const loc = {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-          });
+            accuracy: Math.round(pos.coords.accuracy || 4),
+          };
+          setUserLocation(loc);
+          setFlyToTarget({ lat: loc.lat, lng: loc.lng, zoom: 16 });
         },
         (err) => {
           alert('Could not fetch location: ' + err.message);
-        }
+        },
+        { enableHighAccuracy: true, timeout: 6000 }
       );
     }
   };
@@ -337,11 +324,11 @@ export default function App() {
               const newlyAdded = data.find((p) => !prevIds.has(p.id));
               if (newlyAdded) {
                 setLatestReportId(newlyAdded.id);
-                setFlyToTarget({ lat: newlyAdded.latitude, lng: newlyAdded.longitude, zoom: 15 });
+                setFlyToTarget({ lat: newlyAdded.latitude, lng: newlyAdded.longitude, zoom: 16 });
                 audioRadar.playModerateChime();
                 setNotification({
                   title: '📡 Live Cloud Radar: New Hazard Reported!',
-                  message: `${newlyAdded.severity.toUpperCase()} hazard synced live from commuter device at ${newlyAdded.address || 'Roadway'}.`,
+                  message: `${newlyAdded.severity.toUpperCase()} hazard synced live at ${newlyAdded.address || 'Roadway'}.`,
                   severity: newlyAdded.severity,
                 });
                 setTimeout(() => setNotification(null), 6000);
@@ -370,6 +357,7 @@ export default function App() {
     setPotholes((prev) => [newPothole, ...prev]);
     setLatestReportId(newPothole.id);
     setSelectedPothole(newPothole);
+    setFlyToTarget({ lat: newPothole.latitude, lng: newPothole.longitude, zoom: 16 });
 
     // Sync to Cloud Firestore in real-time
     publishPotholeToCloud(newPothole).catch((err) =>
@@ -378,7 +366,7 @@ export default function App() {
 
     setNotification({
       title: '🚨 Pothole Upload Received!',
-      message: `${newPothole.severity.toUpperCase()} hazard reported at ${newPothole.latitude}, ${newPothole.longitude}`,
+      message: `${newPothole.severity.toUpperCase()} hazard logged at ${newPothole.latitude.toFixed(4)}, ${newPothole.longitude.toFixed(4)}`,
       severity: newPothole.severity,
     });
 
@@ -389,37 +377,20 @@ export default function App() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', backgroundColor: '#020617' }}>
-      {/* Location Permission Modal */}
-      <LocationPermissionModal
-        onGrantPermission={handleLocationGranted}
-        onDenyPermission={() => {}}
-        userLocation={userLocation}
-      />
-
-      {/* Top Header & Search Bar */}
+      
+      {/* Sleek, Uncluttered Top Bar */}
       <HeaderNav
         stats={stats}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
-        mapStyle={mapStyle}
-        onMapStyleChange={setMapStyle}
-        isPhoneOpen={isPhoneOpen}
-        onTogglePhone={() => setIsPhoneOpen(!isPhoneOpen)}
-        onTriggerSimulation={() => setIsSimulateOpen(true)}
         onSelectLocation={handleSelectLocation}
         onLocateMe={handleLocateMe}
         userLocation={userLocation}
-        isDriving={isDriving}
-        onToggleDrive={handleToggleDrive}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
-        onOpenRouteScanner={() => setIsRouteModalOpen(true)}
-        hasActiveRoutes={routes.length > 0}
         isLiveConnected={isLiveConnected}
-        onOpenFirebaseSync={() => setIsFirebaseModalOpen(true)}
+        onOpenDrawer={() => setIsDrawerOpen(true)}
       />
 
-      {/* Full-Screen City Road Map */}
+      {/* Full-Screen Smooth City Road Map */}
       <RadarMap
         potholes={filteredPotholes}
         selectedPothole={selectedPothole}
@@ -433,7 +404,49 @@ export default function App() {
         selectedRouteId={selectedRouteId}
       />
 
-      {/* Proximity Radar Warning HUD */}
+      {/* Floating Camera Report Action Button (Thumb-Friendly FAB) */}
+      <div className="absolute bottom-6 right-6 z-[1000] pointer-events-auto">
+        <button
+          onClick={() => setIsCameraReportOpen(true)}
+          className="flex items-center gap-2.5 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white font-black text-sm shadow-2xl shadow-red-600/50 hover:shadow-red-600/70 border border-white/20 active:scale-95 transition-all group"
+        >
+          <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition">
+            <Camera className="w-5 h-5 text-white" />
+          </div>
+          <span className="tracking-wide shadow-sm">Report Pothole</span>
+        </button>
+      </div>
+
+      {/* Slide-Out Feature Drawer (Tucks away Route Scanner, Drive Mode, Settings) */}
+      <FeatureDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        stats={stats}
+        mapStyle={mapStyle}
+        onMapStyleChange={setMapStyle}
+        isDriving={isDriving}
+        onToggleDrive={handleToggleDrive}
+        isMuted={isMuted}
+        onToggleMute={handleToggleMute}
+        onOpenRouteScanner={() => setIsRouteModalOpen(true)}
+        hasActiveRoutes={routes.length > 0}
+        isLiveConnected={isLiveConnected}
+        onOpenFirebaseSync={() => setIsFirebaseModalOpen(true)}
+        isPhoneOpen={isPhoneOpen}
+        onTogglePhone={() => setIsPhoneOpen(!isPhoneOpen)}
+      />
+
+      {/* Dedicated Camera & Geotag Report Modal (with 10-Meter Anti-Spam Deduplication) */}
+      <CameraReportModal
+        isOpen={isCameraReportOpen}
+        onClose={() => setIsCameraReportOpen(false)}
+        userLocation={userLocation}
+        potholes={potholes}
+        onUploadPothole={handleNewReport}
+        onUpvotePothole={handleUpvote}
+      />
+
+      {/* Proximity Radar Warning HUD (When driving) */}
       <ProximityAlertHUD
         alert={proximityAlert}
         onDismiss={() => setProximityAlert(null)}
@@ -452,7 +465,7 @@ export default function App() {
         userLocation={userLocation}
       />
 
-      {/* Embedded Mobile Phone Simulator */}
+      {/* Embedded Mobile Phone Simulator (Optional view from drawer) */}
       <PhoneSimulator
         potholes={potholes}
         onUploadPothole={handleNewReport}
@@ -493,13 +506,6 @@ export default function App() {
         pothole={grievancePothole}
       />
 
-      {/* Quick Simulation Modal */}
-      <SimulateUploadModal
-        isOpen={isSimulateOpen}
-        onClose={() => setIsSimulateOpen(false)}
-        onSimulate={handleNewReport}
-      />
-
       {/* Firebase Cloud Sync Modal */}
       <FirebaseSyncModal
         isOpen={isFirebaseModalOpen}
@@ -511,12 +517,12 @@ export default function App() {
       />
 
       {/* Bottom Floating Legend */}
-      <div className="absolute bottom-4 right-16 z-[900] glass-pill rounded-xl px-3.5 py-2 hidden md:flex items-center gap-4 text-[11px] font-bold text-slate-300 pointer-events-auto shadow-lg">
+      <div className="absolute bottom-6 left-6 z-[900] glass-pill rounded-xl px-3.5 py-2 hidden md:flex items-center gap-4 text-[11px] font-bold text-slate-300 pointer-events-auto shadow-lg">
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> 🟢 Fixed Road (✓)
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" /> 🟢 Fixed (✓)
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping inline-block" /> 🔴 Severe Crater
+          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping inline-block" /> 🔴 Severe
         </span>
       </div>
     </div>
