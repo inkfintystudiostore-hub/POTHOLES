@@ -5,12 +5,13 @@ import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAJrjeHWvrm6-DR0q4LcS6CnUJnK8DyaT0",
+  authDomain: "potholes-a989e.firebaseapp.com",
+  projectId: "potholes-a989e",
+  storageBucket: "potholes-a989e.firebasestorage.app",
+  messagingSenderId: "447838677282",
+  appId: "1:447838677282:web:2fa4ae05a26960b71a1d7b",
+  measurementId: "G-HVWVQ4P1F8"
 };
 
 // Check if actual configuration has been supplied

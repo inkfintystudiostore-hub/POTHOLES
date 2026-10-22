@@ -2,12 +2,13 @@
 // Free Spark Plan Compatible ($0)
 
 export const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyAJrjeHWvrm6-DR0q4LcS6CnUJnK8DyaT0",
+  authDomain: "potholes-a989e.firebaseapp.com",
+  projectId: "potholes-a989e",
+  storageBucket: "potholes-a989e.firebasestorage.app",
+  messagingSenderId: "447838677282",
+  appId: "1:447838677282:web:2fa4ae05a26960b71a1d7b",
+  measurementId: "G-HVWVQ4P1F8"
 };
 
 const STORAGE_KEY = "roadwatch_firebase_config";
@@ -20,7 +21,13 @@ export function getSavedFirebaseConfig() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (parsed.projectId && parsed.apiKey) {
+      if (
+        parsed.projectId &&
+        parsed.apiKey &&
+        parsed.apiKey.length > 15 &&
+        !parsed.apiKey.includes('YOUR_') &&
+        parsed.projectId !== 'roadwatch-12345'
+      ) {
         return parsed;
       }
     }
@@ -55,5 +62,12 @@ export function clearFirebaseConfig() {
  */
 export function isFirebaseConfigured(config = null) {
   const cfg = config || getSavedFirebaseConfig();
-  return Boolean(cfg && cfg.apiKey && cfg.apiKey.trim().length > 10 && cfg.projectId && cfg.projectId.trim().length > 2);
+  return Boolean(
+    cfg &&
+    cfg.apiKey &&
+    cfg.apiKey.trim().length > 10 &&
+    cfg.projectId &&
+    cfg.projectId.trim().length > 2 &&
+    !cfg.apiKey.includes("YOUR_")
+  );
 }
