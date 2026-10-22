@@ -22,6 +22,7 @@ An end-to-end, cross-platform platform for reporting, detecting, and avoiding ro
 - **4-Stage Repair Lifecycle:** Tracks progress from 🔴 *Reported* ➔ 🟠 *3+ Verified* ➔ 🔵 *In Repair* ➔ 🟢 *Fixed & Patched*.
 - **Interactive Before/After Slider:** Draggable split-view slider comparing crater photos before repair and newly asphalted roads after patching.
 - **1-Click Civic Grievance & Social Export:** Pre-drafted formal notice to the Municipal Commissioner, 1-click Twitter/X intent tagging `@PWD_Roads`, and WhatsApp alerts.
+- **⚡ Live Cloud Sync (Firebase Spark $0 Tier):** Real-time multi-device synchronization via Firestore `onSnapshot`. When any commuter snaps a pothole on their mobile phone, the web radar map instantly pulses with live audio chime and toast notification. Includes in-app 1-click config modal.
 
 ### 2. 📱 Mobile App (iOS & Android with Expo)
 - **GPS Geotagger HUD:** Viewfinder overlay showing live coordinates (`lat, lng`) and horizontal satellite precision meters ($\pm 3\text{m}$).
@@ -53,7 +54,11 @@ PROJECT POTHOLES/
 │   │   │   ├── BeforeAfterSlider.jsx  # Draggable repair comparison slider
 │   │   │   ├── SafeRouteModal.jsx     # Route A vs Route B quality scanner
 │   │   │   ├── ProximityAlertHUD.jsx  # Automotive heads-up warning banner
-│   │   │   └── CivicGrievanceModal.jsx# 1-click Twitter & legal grievance exporter
+│   │   │   ├── CivicGrievanceModal.jsx# 1-click Twitter & legal grievance exporter
+│   │   │   └── FirebaseSyncModal.jsx  # 1-click Firebase Cloud Sync modal & parser
+│   │   ├── services/
+│   │   │   ├── firebaseConfig.js      # Dynamic credentials loader & localStorage
+│   │   │   └── firebaseSync.js        # Firestore real-time onSnapshot sync stream
 │   │   ├── utils/
 │   │   │   ├── audioRadar.js          # Web Audio API chime synthesizer
 │   │   │   └── routeService.js        # OSRM road geometry & smoothness scorer
