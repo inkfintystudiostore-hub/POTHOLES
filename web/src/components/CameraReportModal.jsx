@@ -55,6 +55,34 @@ export default function CameraReportModal({
   const streamRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  // Stop camera stream safely
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  // Start camera stream
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setCameraActive(true);
+    } catch (err) {
+      console.warn('Camera access denied or unavailable:', err);
+      alert('Unable to access live camera stream. You can upload a photo file or select a sample image instead.');
+    }
+  };
+
   // Initialize GPS Coordinates and check 10m proximity
   useEffect(() => {
     if (!isOpen) {
@@ -109,33 +137,6 @@ export default function CameraReportModal({
       }
     }
   }
-
-  // Camera stream controls
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 } },
-        audio: false,
-      });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
-      setCameraActive(true);
-    } catch (err) {
-      console.warn('Camera access denied or unavailable:', err);
-      alert('Unable to access live camera stream. You can upload a photo file or select a sample image instead.');
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    setCameraActive(false);
-  };
 
   const captureSnapshot = () => {
     if (!videoRef.current) return;
